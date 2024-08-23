@@ -88,8 +88,7 @@
 		    <groupId>javax.xml.bind</groupId>
 		    <artifactId>jaxb-api</artifactId>
 		    <version>2.3.1</version>
-		</dependency>	    
-	    	    
+		</dependency>
 	</dependencies>
 	
 
@@ -99,6 +98,15 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+	        <!-- Maven Compiler Plugin -->
+	        <plugin>
+	            <groupId>org.apache.maven.plugins</groupId>
+	            <artifactId>maven-compiler-plugin</artifactId>
+	            <configuration>
+	                <source>17</source>
+	                <target>17</target>
+	            </configuration>
+	        </plugin>			
 		</plugins>
 	</build>
 
