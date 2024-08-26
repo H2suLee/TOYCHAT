@@ -19,7 +19,7 @@ import com.toychat.prj.service.ChatService;
 import com.toychat.prj.service.ChatroomService;
 
 @RestController
-@RequestMapping("/chat")
+@RequestMapping("/api/chat")
 public class ChatController {
 
 	@Autowired

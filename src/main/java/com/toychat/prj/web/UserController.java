@@ -15,7 +15,7 @@ import com.toychat.prj.entity.User;
 import com.toychat.prj.service.UserService;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
 	
     @Autowired
