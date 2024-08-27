@@ -53,7 +53,7 @@ public class AdminLoginController {
 		String jwtToken = jwtUtil.generateToken(userDetails.getUsername());
 		user.setNick(userDetails.getUser().getNick());
 		user.setJwt(jwtToken);
-
+		System.out.println("login complete");
         return user;
     }
 

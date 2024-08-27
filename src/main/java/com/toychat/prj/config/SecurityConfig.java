@@ -32,7 +32,7 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/login", "/admin/register", "/chat/**").permitAll() // 인증 필요 없는 경로
+                .requestMatchers("/api/admin/login", "/api/admin/register", "/api/chat/**").permitAll() // 인증 필요 없는 경로
                 //.requestMatchers("/admin/**").hasRole("ADM")
                 .anyRequest().permitAll()	
                 //.anyRequest().authenticated() // 다른 모든 요청은 인증 필요
