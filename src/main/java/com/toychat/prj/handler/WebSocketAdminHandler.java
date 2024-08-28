@@ -29,6 +29,7 @@ public class WebSocketAdminHandler extends TextWebSocketHandler {
 	// 오픈시
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+		
 		sessions.add(session);
 
 		URI uri = session.getUri();
@@ -38,7 +39,6 @@ public class WebSocketAdminHandler extends TextWebSocketHandler {
 				Map<String, String> queryParams = parseQuery(query);
 				String nick = queryParams.get("nick");
 				if (!nick.equals("null")) {
-
 					session.getAttributes().put("nick", nick);
 					admSessions.computeIfAbsent(nick, k -> ConcurrentHashMap.newKeySet()).add(session);
 
@@ -54,7 +54,6 @@ public class WebSocketAdminHandler extends TextWebSocketHandler {
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 		String nick = (String) session.getAttributes().get("nick");
-		System.out.println("close : " + nick);
 		if (nick != null) {
 			Set<WebSocketSession> userSessions = admSessions.get(nick);
 			if (userSessions != null) {
@@ -63,16 +62,18 @@ public class WebSocketAdminHandler extends TextWebSocketHandler {
 				if (userSessions.isEmpty()) {
 					admSessions.remove(nick);
 					System.out.println("sessions removed");
-					broadcastActiveAdmins();
 				}
 			}
 		}
 
+		sessions.remove(session);
+		broadcastActiveAdmins();
 	}
 
 	// 접속중인 admin 목록 send
 	private void broadcastActiveAdmins() {
 		for (WebSocketSession session : sessions) {
+			System.out.println("================================ broadcasting......" + session.getId() + " / " + session.getAttributes().get("nick") );
 			if (session.isOpen()) { // 관리자세션인지 아닌지도 검사해야할까..
 				String admStr = getActiveAdm();
 				System.out.println("actvAdm >>> " + admStr);

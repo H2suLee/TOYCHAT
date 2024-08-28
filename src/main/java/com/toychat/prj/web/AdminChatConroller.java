@@ -34,7 +34,7 @@ public class AdminChatConroller {
     @Autowired
     private ChatroomService chatroomService;
     
-    // 관리자 채팅 이력 : 상태가 02, 03 인것만
+    // 관리자 채팅 이력 : 상상태가 02, 03 인 [카테고리, 상태(진행중/완료), 채팅방 생성일, 채팅방 수정일, 문의자, 관리(메모)]
     @PostMapping("/mnglist")
     public List<ChatroomInfo> getChatRoomsMngList(@RequestBody HashMap<String,Object> searchMap) {
     	System.out.println("============================/admin/chat/mnglist");

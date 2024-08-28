@@ -17,6 +17,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
+import org.springframework.data.mongodb.core.aggregation.ConditionalOperators;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
@@ -31,7 +33,6 @@ import com.toychat.prj.common.sequence.SequenceService;
 import com.toychat.prj.common.util.Util;
 import com.toychat.prj.entity.Chatroom;
 import com.toychat.prj.entity.ChatroomInfo;
-import com.toychat.prj.entity.Participant;
 import com.toychat.prj.entity.User;
 import com.toychat.prj.repository.ChatroomRepository;
 import com.toychat.prj.repository.UserRepository;
@@ -79,15 +80,6 @@ public class ChatroomService {
 	     // chatroom에 채팅방 등록
 	     chatroomRepository.save(room);
 
-	     // user에 채팅방 매핑
-//	     User userChatrooms = userRepository.findChatroomById(user.getId());
-//	     List<String> chatroomList = userChatrooms.getChatrooms();
-//	     chatroomList.add(roomId);
-//	     user.setChatrooms(chatroomList);
-//
-//	     userRepository.save(user);
-
-
          return room;
 	}
 
@@ -95,8 +87,22 @@ public class ChatroomService {
 	// roomId, credt, 내용, 상담원, 상태, 마지막 메시지의 chatId, 마지막 메시지의 credt 
 	public List<ChatroomInfo> getChatRoomsByUserId(User user) {
 		String userId = user.getId();
-        // participants._id가 특정 값과 일치하는 항목 필터링
-        MatchOperation matchOperation = match(Criteria.where("participants._id").is(userId));
+		
+        // participants._id = userId
+        MatchOperation matchOperation = match(Criteria.where("participants._id").is(userId).and("participants").ne(null));
+
+		// projection
+		ProjectionOperation addParticipantsSizeProjection = project()
+		    .and("_id").as("_id")
+		    //.and(ArrayOperators.ArrayElemAt.arrayOf("participants").elementAt(0)).as("usr")
+		    .and(ArrayOperators.ArrayElemAt.arrayOf("participants").elementAt(1)).as("adm")
+		    .and("status").as("status")
+		    .and("credt").as("credt")
+		    .and(ArrayOperators.Size.lengthOfArray(
+		        ConditionalOperators.ifNull("participants").then(new ArrayList<>())
+		    )).as("participantsSize");        
+
+        MatchOperation filterByParticipantsSize = match(Criteria.where("participantsSize").gte(2));
 
         // Lookup을 사용하여 "chats" 컬렉션에서 데이터 조회
         LookupOperation lookupOperation = lookup("chats", "_id", "chatroomId", "lastMessages");
@@ -104,57 +110,89 @@ public class ChatroomService {
         // lastMessages 배열을 unwind 하여 각 채팅방의 마지막 메시지를 가져옵니다.
         UnwindOperation unwindOperation = unwind("lastMessages", true);
 
-        // 메시지의 credt 필드를 기준으로 내림차순 정렬
+        // credt 내림차순
         SortOperation sortOperation = sort(Sort.by(Sort.Direction.DESC, "lastMessages.credt"));
 
-        // 필요한 필드들을 그룹화
+        // 필요 필드 그룹화
         GroupOperation groupOperation = group("_id")
                 .first("_id").as("chatroomId")
-                .first("participants").as("participants")
-                //.first("credt").as("credt")
+        	    //.first("usr").as("usr")
+        	    .first("adm").as("adm")
+                .first("credt").as("credt")
                 .first("status").as("status")
                 .first("lastMessages.content").as("lastContent")
                 .first("lastMessages.type").as("lastChatType")
                 .first("lastMessages.credt").as("lastCredt");
-
-        // 최종 필드를 프로젝트
-        ProjectionOperation projectionOperation = project()
-                .and("chatroomId").as("chatroomId")
-                .and("participants").as("participants")
-                //.and("credt").as("credt")
-                .and("status").as("status")
-                .and("lastContent").as("lastContent")
-                .and("lastChatType").as("lastChatType")
-                .and("lastCredt").as("lastCredt");
-
-        // 결과를 credt 필드를 기준으로 정렬
+        
+        // 마지막 채팅일시 내림차순
         SortOperation finalSortOperation = sort(Sort.by(Sort.Direction.DESC, "lastCredt"));
 
         // Aggregation 파이프라인을 설정
         Aggregation aggregation = newAggregation(
                 matchOperation,
+                addParticipantsSizeProjection,
+                filterByParticipantsSize,
                 lookupOperation,
                 unwindOperation,
                 sortOperation,
                 groupOperation,
-                projectionOperation,
                 finalSortOperation
         );
 
-        // MongoDB에서 Aggregation 실행
+        // Aggregation 실행
         AggregationResults<ChatroomInfo> results = mongoTemplate.aggregate(aggregation, "chatrooms", ChatroomInfo.class);
         List<ChatroomInfo> list = results.getMappedResults();
         
         return list;
 	}
 
-	// 채팅 관리 리스트 
+	// 채팅 관리 리스트 : 상태가 02, 03 인 [카테고리, 상태(진행중/완료), 채팅방 생성일, 채팅방 수정일, 문의자, 관리(메모)]
 	public List<ChatroomInfo> getChatRoomsMngList(HashMap<String, Object> searchMap) {
-		// TODO Auto-generated method stub
-		return null;
+		// 필터링 조건
+		MatchOperation matchOperation = match(Criteria.where("status").in("02", "03")
+		                                             .and("participants").ne(null));
+
+		// participants의 수 계산 및 필터링
+		ProjectionOperation addParticipantsSizeProjection = project()
+		    .and("_id").as("chatroomId")
+		    .and(ArrayOperators.ArrayElemAt.arrayOf("participants").elementAt(0)).as("usr")
+		    .and(ArrayOperators.ArrayElemAt.arrayOf("participants").elementAt(1)).as("adm")
+		    .and("status").as("status")
+		    .and("credt").as("credt")
+		    .and("upddt").as("upddt")
+		    .and(ArrayOperators.Size.lengthOfArray(
+		        ConditionalOperators.ifNull("participants").then(new ArrayList<>())
+		    )).as("participantsSize");
+
+		MatchOperation filterByParticipantsSize = match(Criteria.where("participantsSize").gte(2));
+
+		// 그룹화 및 정렬
+		GroupOperation groupOperation = group("_id")
+		    .first("_id").as("chatroomId")
+		    .first("usr").as("usr")
+		    .first("adm").as("adm")
+		    .first("status").as("status")
+		    .first("credt").as("credt")
+		    .first("upddt").as("upddt");
+
+		SortOperation finalSortOperation = sort(Sort.by(Sort.Direction.DESC, "credt"));
+
+		// Aggregation 파이프라인을 설정
+		Aggregation aggregation = newAggregation(
+		    matchOperation,
+		    addParticipantsSizeProjection,
+		    filterByParticipantsSize,
+		    groupOperation,
+		    finalSortOperation
+		);
+
+		// Aggregation 실행
+		AggregationResults<ChatroomInfo> results = mongoTemplate.aggregate(aggregation, "chatrooms", ChatroomInfo.class);
+		List<ChatroomInfo> list = results.getMappedResults();
+        return list;
 	}
 
-	// 실시간 상담 대기 리스트
+	// 실시간 상담 대기 리스트 : 상태가 01 인 [생성일, 사용자 이름, 상태]
 	public List<ChatroomInfo> getLiveChatWaitingList(HashMap<String, Object> searchMap) {
         // 쿼리 작성
         Query query = new Query()

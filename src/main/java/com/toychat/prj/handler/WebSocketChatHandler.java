@@ -59,10 +59,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 	// 소켓 연결 확인
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-		// TODO Auto-generated method stub
-		System.out.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-		System.out.printf("%s 연결됨: ", session.getId());
-		System.out.println();
 		sessions.add(session);
 
 	}
@@ -71,7 +67,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 		String payload = message.getPayload();
-		System.out.printf("payroad %s", payload);
 
 		// 페이로드 -> chatMessageDto로 변환
 		Chat chatMessageDto = mapper.readValue(payload, Chat.class);
@@ -84,7 +79,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 		String chatId = String.valueOf(sequenceService.generateSequence(Chat.SEQUENCE_NAME));
 		chatMessageDto.setChatId(chatId);
 
-		System.out.println();
 		String chatRoomId = chatMessageDto.getChatroomId();
 
 		// 세션에 chatRoomId 저장
@@ -105,7 +99,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 			addParticipant(chatMessageDto);
 		}
 
-		System.out.println("chatRoomSession: " + chatRoomSession.size());
 		// 이 부분은 왜 있는거지?
 		if (chatRoomSession.size() >= 3) {
 			removeClosedSession(chatRoomSession);
@@ -146,7 +139,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 
 		// 해당 session의 chatroomId 를 들고와야함..
 		String chatRoomId = (String) session.getAttributes().get("chatRoomId");
-		System.out.println("chatRoomId : " + chatRoomId);
 		if (chatRoomId != null) {
 //            Set<WebSocketSession> chatRoomSession = chatRoomSessionMap.get(chatRoomId);
 //            if (chatRoomSession != null) {
@@ -161,8 +153,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 			if (messages != null && !messages.isEmpty()) {
 				for (Object obj : messages) {
 					Chat message = (Chat) obj;
-					System.out.println("message ===============================");
-					System.out.println(message.toString());
 					chatRepository.save(message);
 				}
 				redisTemplate.delete("chat_" + chatRoomId);
@@ -178,7 +168,6 @@ public class WebSocketChatHandler extends TextWebSocketHandler {
 			chatroomRepository.save(room);
 		}
 
-		System.out.printf("%s 연결 끊김", session.getId());
 		sessions.remove(session);
 	}
 
