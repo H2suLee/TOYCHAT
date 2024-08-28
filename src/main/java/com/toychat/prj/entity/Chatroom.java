@@ -21,6 +21,8 @@ public class Chatroom {
     private String credt;
     private String upddt;
     private String status;
+    private String category;
+    private String memo;
 }
 
 

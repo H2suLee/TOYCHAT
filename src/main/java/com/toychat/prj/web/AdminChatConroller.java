@@ -54,6 +54,21 @@ public class AdminChatConroller {
     	return chatroomService.getLiveChatWaitingList(searchMap);
     }     
 
+    // 채팅 관리 정보 : category, memo
+    @PostMapping("/chatManageInfo")
+    public Chatroom getChatManageInfo(@RequestBody Chatroom chatroom) {
+    	System.out.println("============================/admin/chat/chatManageInfo");
+    	
+    	return chatroomService.getChatManageInfo(chatroom);
+    }     
+
+    // 채팅 관리 저장 : category, memo
+    @PostMapping("/saveChatManageInfo")
+    public void saveChatManageInfo(@RequestBody Chatroom chatroom) {
+    	System.out.println("============================/admin/chat/saveChatManageInfo");
+    	chatroomService.saveChatManageInfo(chatroom);
+    }     
+
     // 내 이력
     @PostMapping("/mylist")
     public List<ChatroomInfo> getChatRoomsByUserId() {

@@ -11,6 +11,7 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.unwi
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -209,6 +210,20 @@ public class ChatroomService {
         // 쿼리 실행
         List<ChatroomInfo> results = mongoTemplate.find(query, ChatroomInfo.class, "chatrooms");
         return results;
+	}
+
+	public Chatroom getChatManageInfo(Chatroom chatroom) {
+		String chatroomId = chatroom.getChatroomId();
+		return chatroomRepository.findById(chatroomId).get();
+	}
+
+	public void saveChatManageInfo(Chatroom chatroom) {
+		String credt = util.getNowDttm();
+		Chatroom saveVo = chatroomRepository.findById(chatroom.getChatroomId()).get();
+		saveVo.setCategory(chatroom.getCategory());
+		saveVo.setMemo(chatroom.getMemo());
+		saveVo.setUpddt(credt);
+		chatroomRepository.save(saveVo);
 	}
 	
 }

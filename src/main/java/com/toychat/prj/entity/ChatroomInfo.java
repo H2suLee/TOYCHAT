@@ -16,5 +16,7 @@ public class ChatroomInfo {
     private String _id;
     private Participant usr;
     private Participant adm;
+    private String category;
+    private String memo;
 
 }
